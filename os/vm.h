@@ -16,4 +16,13 @@ int copyout(pagetable_t, uint64, char *, uint64);
 int copyin(pagetable_t, char *, uint64, uint64);
 int copyinstr(pagetable_t, char *, uint64, uint64);
 
+#define USER_STACK_TOP  (TRAPFRAME)       
+#define USER_STACK_PAGE (TRAPFRAME - PGSIZE) 
+
+void uvmunmap_mmap_pages(pagetable_t);
+
+/////
+int vm_mmap(pagetable_t, uint64, uint64, int);
+int vm_munmap(pagetable_t, uint64, uint64);
+/////
 #endif // VM_H

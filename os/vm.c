@@ -1,6 +1,8 @@
 #include "vm.h"
 #include "defs.h"
 #include "riscv.h"
+#include "loader.h" 
+#include "proc.h"
 
 pagetable_t kernel_pagetable;
 
@@ -20,6 +22,7 @@ pagetable_t kvmmake(void)
 	kvmmap(kpgtbl, (uint64)e_text, (uint64)e_text, PHYSTOP - (uint64)e_text,
 	       PTE_R | PTE_W);
 	kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+
 	return kpgtbl;
 }
 
@@ -294,4 +297,73 @@ int copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 		srcva = va0 + PGSIZE;
 	}
 	return len;
+}
+
+/////
+int vm_mmap(pagetable_t pagetable, uint64 start, uint64 len, int perm)
+{
+	uint64 a = PGROUNDDOWN(start);
+	uint64 end = PGROUNDUP(start + len);
+
+	for (uint64 va = a; va < end; va += PGSIZE) {
+		pte_t *pte = walk(pagetable, va, 0);
+		if (pte != 0 && (*pte & PTE_V))
+			return -1;
+	}
+
+	for (uint64 va = a; va < end; va += PGSIZE) {
+		void *mem = kalloc();
+		if (mem == 0) {
+			if (va > a)
+				uvmunmap(pagetable, a, (va - a) / PGSIZE, 1);
+			return -1;
+		}
+
+		memset(mem, 0, PGSIZE);
+
+		if (mappages(pagetable, va, PGSIZE, (uint64)mem, perm) < 0) {
+			kfree(mem);
+			if (va > a)
+				uvmunmap(pagetable, a, (va - a) / PGSIZE, 1);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int vm_munmap(pagetable_t pagetable, uint64 start, uint64 len)
+{
+	uint64 a = PGROUNDDOWN(start);
+	uint64 end = PGROUNDUP(start + len);
+
+	for (uint64 va = a; va < end; va += PGSIZE) {
+		pte_t *pte = walk(pagetable, va, 0);
+		if (pte == 0 || (*pte & PTE_V) == 0)
+			return -1;
+	}
+
+	uvmunmap(pagetable, a, (end - a) / PGSIZE, 1);
+	return 0;
+}
+/////
+
+
+void uvmunmap_mmap_pages(pagetable_t pagetable)
+{
+    for (int i = 0; i < 512; i++) {
+        pte_t pte = pagetable[i];
+        if (!(pte & PTE_V))
+            continue;
+        if (pte & (PTE_R | PTE_W | PTE_X)) {
+
+            if (pte & PTE_U) {
+                kfree((void *)PTE2PA(pte));
+                pagetable[i] = 0;
+            }
+        } else {
+
+            uvmunmap_mmap_pages((pagetable_t)PTE2PA(pte));
+        }
+    }
 }
