@@ -89,14 +89,12 @@ int loader(int app_id, struct proc *p)
 int load_init_app()
 {
 	int id = get_id_by_name(INIT_PROC);
-	if (id < 0)
-		panic("Cannpt find INIT_PROC %s", INIT_PROC);
-	struct proc *p = allocproc();
-	if (p == NULL) {
-		panic("allocproc\n");
-	}
-	debugf("load init proc %s", INIT_PROC);
-	loader(id, p);
-	add_task(p);
-	return 0;
+    if (id < 0)
+        panic("Cannot find INIT_PROC %s", INIT_PROC);
+    struct proc *p = allocproc();
+    if (p == NULL)
+        panic("allocproc\n");
+    debugf("load init proc %s", INIT_PROC);
+    loader(id, p);
+    return 0;
 }
