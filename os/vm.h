@@ -18,5 +18,8 @@ int copyin(pagetable_t, char *, uint64, uint64);
 int copyinstr(pagetable_t, char *, uint64, uint64);
 int either_copyout(int, uint64, char *, uint64);
 int either_copyin(int, uint64, char *, uint64);
+int vm_mmap(pagetable_t, uint64, uint64, int);
+int vm_munmap(pagetable_t, uint64, uint64);
+void uvmunmap_mmap_pages(pagetable_t);
 
 #endif // VM_H

@@ -10,8 +10,8 @@
 #define NDEV 10 // maximum major device number
 #define ROOTDEV 1 // device number of file system root disk
 #define MAXOPBLOCKS 10 // max # of blocks any FS op writes
-#define NBUF (MAXOPBLOCKS * 3) // size of disk block cache
-#define FSSIZE 1000 // size of file system in blocks
+#define NBUF (MAXOPBLOCKS * 6) // size of disk block cache
+#define FSSIZE 8000 // size of file system in blocks
 #define MAXPATH 128 // maximum file path name
 
 #define ROOTINO 1 // root i-number
@@ -43,8 +43,10 @@ struct superblock {
 
 // On-disk inode structure
 struct dinode {
-	short type; // File type
-	short pad[3];
+	short type;
+    short nlink;  // ← used pad[0] as nlink
+    short pad[2]; // ← reduced pad from 3 to 2
+
 	// LAB4: you can reduce size of pad array and add link count below,
 	//       or you can just regard a pad as link count.
 	//       But keep in mind that you'd better keep sizeof(dinode) unchanged
@@ -92,4 +94,5 @@ int readi(struct inode *, int, uint64, uint, uint);
 int writei(struct inode *, int, uint64, uint, uint);
 void itrunc(struct inode *);
 int dirls(struct inode *);
+int dirunlink(struct inode *, char *);
 #endif //!__FS_H__
